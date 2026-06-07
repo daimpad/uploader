@@ -1001,11 +1001,9 @@ async function uploadFile(file, email, uploadToken = '', linkPassword = '') {
         fd.append('original_name', file.name);
         fd.append('total_size',    String(file.size));
         if (email) fd.append('email', email);
-        // Zugangscode + Link-Passwort nur mit erstem Chunk senden
-        if (i === 0) {
-            if (uploadToken)  fd.append('upload_token',   uploadToken);
-            if (linkPassword) fd.append('link_password',  linkPassword);
-        }
+        // Zugangscode + Link-Passwort mit jedem Chunk senden (Server prüft jeden Chunk)
+        if (uploadToken)  fd.append('upload_token',  uploadToken);
+        if (linkPassword) fd.append('link_password', linkPassword);
 
         const label = totalChunks === 1
             ? 'Hochladen…'

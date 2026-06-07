@@ -69,8 +69,7 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 
 echo json_encode([
-    'status'      => $httpStatus === 200 ? 'ok' : 'error',
-    'checks'      => $checks,
-    'php_version' => PHP_VERSION,
-    'timestamp'   => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('c'),
+    'status'    => $httpStatus === 200 ? 'ok' : 'error',
+    'checks'    => $checks,
+    'timestamp' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('c'),
 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);

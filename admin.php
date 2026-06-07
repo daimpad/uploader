@@ -30,8 +30,14 @@ $isLoggedIn  = isset($_SESSION['uploadez_admin'])
                && (time() - $_SESSION['uploadez_admin_ts']) < ADMIN_SESSION_LIFETIME;
 
 // ── Abmelden ─────────────────────────────────────────────────────────────────
-if (isset($_GET['logout'])) {
-    session_destroy();
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
+    // CSRF vor Destroy prüfen (Token liegt noch in der Session)
+    $submitted = $_POST['csrf_token'] ?? '';
+    if (hash_equals($_SESSION['csrf_token'] ?? '', $submitted)) {
+        $_SESSION = [];
+        setcookie(session_name(), '', time() - 3600, '/', '', isset($_SERVER['HTTPS']), true);
+        session_destroy();
+    }
     header('Location: admin.php');
     exit;
 }
@@ -51,7 +57,9 @@ function verifyCsrf(): bool {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['password'])) {
     $hash = ADMIN_PASSWORD_HASH;
 
-    if ($hash === '') {
+    if (!verifyCsrf()) {
+        $error = 'Ungültige Sitzung. Bitte Seite neu laden.';
+    } elseif ($hash === '') {
         $error = 'Kein Admin-Passwort konfiguriert. Bitte ADMIN_PASSWORD_HASH in .env setzen.';
     } elseif (password_verify($_POST['password'], $hash)) {
         session_regenerate_id(true);
@@ -622,7 +630,11 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
     <?php if ($isLoggedIn): ?>
     <div class="header-actions">
         <a href="/" class="btn-ghost">← Zum Upload</a>
-        <a href="admin.php?logout=1" class="btn-ghost">Abmelden</a>
+        <form method="POST" action="admin.php" style="display:inline">
+            <input type="hidden" name="logout" value="1">
+            <input type="hidden" name="csrf_token" value="<?= $h($csrfToken) ?>">
+            <button type="submit" class="btn-ghost">Abmelden</button>
+        </form>
     </div>
     <?php endif; ?>
 </header>
@@ -639,6 +651,7 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
         <?php endif; ?>
 
         <form method="POST" autocomplete="off">
+            <input type="hidden" name="csrf_token" value="<?= $h($csrfToken) ?>">
             <div class="form-group">
                 <label for="pw">Passwort</label>
                 <input type="password" id="pw" name="password" autofocus required placeholder="••••••••">
