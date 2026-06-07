@@ -105,7 +105,7 @@ function handleUploadChunk(PDO $pdo): void
     }
 
     // ── Prüfen ob alle Chunks angekommen sind ────────────────────────────────
-    $received = count(glob($chunkDir . '/chunk_*'));
+    $received = count(glob($chunkDir . '/chunk_*') ?: []);
 
     if ($received < $totalChunks) {
         echo json_encode([
@@ -231,10 +231,12 @@ function assembleAndStore(
         // Sicherer, zufälliger Dateiname (kein Zusammenhang zum Original)
         $storedName = bin2hex(random_bytes(16)) . '.' . $ext;
         $destPath   = UPLOAD_DIR . $storedName;
+        $renamed    = false;
 
         if (!rename($tmpAssembled, $destPath)) {
             throw new RuntimeException('Datei konnte nicht gespeichert werden.', 500);
         }
+        $renamed = true;
 
         // Dateiberechtigungen: Nur lesen (kein Ausführen)
         chmod($destPath, 0640);
@@ -289,8 +291,10 @@ function assembleAndStore(
         return ['token' => $token, 'expiry' => $expiry];
 
     } catch (Throwable $e) {
-        // Temp-Datei entfernen
-        if (file_exists($tmpAssembled)) {
+        if ($renamed) {
+            // rename() war erfolgreich → temp-Pfad existiert nicht mehr, destPath bereinigen
+            @unlink($destPath);
+        } elseif (file_exists($tmpAssembled)) {
             @unlink($tmpAssembled);
         }
         // Chunk-Verzeichnis ebenfalls bereinigen (verhindert verwaiste Dateien)
