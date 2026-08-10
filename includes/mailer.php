@@ -6,7 +6,11 @@ declare(strict_types=1);
  *
  * Bevorzugt PHPMailer (composer require phpmailer/phpmailer).
  * Fallback: PHP-internes mail().
+ *
+ * Das Aussehen der Nachrichten steht in includes/ci.php.
  */
+
+require_once __DIR__ . '/ci.php';
 
 function handleSendEmail(PDO $pdo): void
 {
@@ -39,52 +43,27 @@ function handleSendEmail(PDO $pdo): void
     $downloadUrl = APP_URL . '/download.php?token=' . $token;
     $expiryDate  = (new DateTimeImmutable($file['expiry']))->format('d.m.Y');
     $fileSize    = formatBytes((int)$file['file_size']);
-    $fileName    = htmlspecialchars($file['original_name'], ENT_QUOTES, 'UTF-8');
+    // Roh: nzMailDataTable() maskiert selbst, doppeltes Maskieren zeigt &amp;amp;
+    $fileName    = $file['original_name'];
 
     $subject = 'Dein Download-Link für: ' . $file['original_name'];
 
-    $bodyHtml = <<<HTML
-    <!DOCTYPE html>
-    <html lang="de">
-    <head><meta charset="UTF-8"><title>Dein Download-Link</title></head>
-    <body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:20px;">
-      <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1);">
-        <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:30px;text-align:center;">
-          <h1 style="color:#fff;margin:0;font-size:24px;">📁 UploadEz</h1>
-          <p style="color:rgba(255,255,255,.85);margin:8px 0 0;">Deine Datei steht bereit</p>
-        </div>
-        <div style="padding:30px;">
-          <p style="color:#334155;font-size:15px;">Hallo,</p>
-          <p style="color:#334155;font-size:15px;">
-            eine Datei wurde für dich hochgeladen und kann über den folgenden Link heruntergeladen werden:
-          </p>
-          <table style="width:100%;border-collapse:collapse;margin:20px 0;background:#f8fafc;border-radius:6px;">
-            <tr><td style="padding:10px 14px;color:#64748b;font-size:13px;">Dateiname</td>
-                <td style="padding:10px 14px;color:#1e293b;font-size:13px;font-weight:600;">{$fileName}</td></tr>
-            <tr style="background:#f1f5f9;">
-                <td style="padding:10px 14px;color:#64748b;font-size:13px;">Größe</td>
-                <td style="padding:10px 14px;color:#1e293b;font-size:13px;">{$fileSize}</td></tr>
-            <tr><td style="padding:10px 14px;color:#64748b;font-size:13px;">Gültig bis</td>
-                <td style="padding:10px 14px;color:#1e293b;font-size:13px;">{$expiryDate}</td></tr>
-          </table>
-          <div style="text-align:center;margin:28px 0;">
-            <a href="{$downloadUrl}"
-               style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:600;">
-              Datei herunterladen
-            </a>
-          </div>
-          <p style="color:#94a3b8;font-size:12px;text-align:center;margin-top:20px;">
-            Dieser Link läuft am {$expiryDate} ab und kann danach nicht mehr genutzt werden.<br>
-            Bitte leite diese E-Mail nur an vertrauenswürdige Personen weiter.
-          </p>
-        </div>
-        <div style="background:#f8fafc;padding:16px;text-align:center;">
-          <p style="color:#94a3b8;font-size:12px;margin:0;">UploadEz · Sicheres File-Sharing</p>
-        </div>
-      </div>
-    </body>
-    </html>
-    HTML;
+    $bodyHtml = nzMailLayout(
+        'Dein Download-Link',
+        'Deine Datei steht bereit',
+        '<p style="' . NZ_MAIL_P . '">Hallo,</p>'
+        . '<p style="' . NZ_MAIL_P . '">eine Datei wurde für dich hochgeladen. '
+        . 'Über den folgenden Link kannst du sie herunterladen.</p>'
+        . nzMailDataTable([
+            'Dateiname'  => $fileName,
+            'Größe'      => $fileSize,
+            'Gültig bis' => $expiryDate,
+        ])
+        . nzMailButton($downloadUrl, 'Datei herunterladen')
+        . '<p style="' . NZ_MAIL_NOTE . '">Der Link läuft am ' . $expiryDate . ' ab. '
+        . 'Danach ist er nicht mehr gültig.<br>'
+        . 'Leite diese E-Mail nur an Personen weiter, denen du vertraust.</p>'
+    );
 
     $bodyText = "Dein Download-Link\n\n"
         . "Datei: {$file['original_name']}\n"
@@ -192,52 +171,25 @@ function sendUploaderNotification(
     $downloadUrl  = APP_URL . '/download.php?token=' . $token;
     $expiryDate   = (new DateTimeImmutable($expiry, new DateTimeZone('UTC')))->format('d.m.Y');
     $fileSizeStr  = formatBytes($fileSize);
-    $fileNameSafe = htmlspecialchars($fileName, ENT_QUOTES, 'UTF-8');
 
     $subject = 'Upload erfolgreich: ' . $fileName;
 
-    $bodyHtml = <<<HTML
-    <!DOCTYPE html>
-    <html lang="de">
-    <head><meta charset="UTF-8"><title>Upload erfolgreich</title></head>
-    <body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:20px;">
-      <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1);">
-        <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:30px;text-align:center;">
-          <h1 style="color:#fff;margin:0;font-size:24px;">✅ Upload erfolgreich</h1>
-          <p style="color:rgba(255,255,255,.85);margin:8px 0 0;">Deine Datei wurde hochgeladen</p>
-        </div>
-        <div style="padding:30px;">
-          <p style="color:#334155;font-size:15px;">Hallo,</p>
-          <p style="color:#334155;font-size:15px;">
-            deine Datei wurde erfolgreich hochgeladen. Hier ist dein persönlicher Download-Link zum Teilen:
-          </p>
-          <table style="width:100%;border-collapse:collapse;margin:20px 0;background:#f8fafc;border-radius:6px;">
-            <tr><td style="padding:10px 14px;color:#64748b;font-size:13px;">Dateiname</td>
-                <td style="padding:10px 14px;color:#1e293b;font-size:13px;font-weight:600;">{$fileNameSafe}</td></tr>
-            <tr style="background:#f1f5f9;">
-                <td style="padding:10px 14px;color:#64748b;font-size:13px;">Größe</td>
-                <td style="padding:10px 14px;color:#1e293b;font-size:13px;">{$fileSizeStr}</td></tr>
-            <tr><td style="padding:10px 14px;color:#64748b;font-size:13px;">Gültig bis</td>
-                <td style="padding:10px 14px;color:#1e293b;font-size:13px;">{$expiryDate}</td></tr>
-          </table>
-          <div style="text-align:center;margin:28px 0;">
-            <a href="{$downloadUrl}"
-               style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:600;">
-              Download-Link öffnen
-            </a>
-          </div>
-          <p style="color:#94a3b8;font-size:12px;text-align:center;margin-top:20px;">
-            Teile diesen Link mit den Personen, die die Datei herunterladen sollen.<br>
-            Der Link läuft am {$expiryDate} ab.
-          </p>
-        </div>
-        <div style="background:#f8fafc;padding:16px;text-align:center;">
-          <p style="color:#94a3b8;font-size:12px;margin:0;">UploadEz · Sicheres File-Sharing</p>
-        </div>
-      </div>
-    </body>
-    </html>
-    HTML;
+    $bodyHtml = nzMailLayout(
+        'Upload erfolgreich',
+        'Deine Datei wurde hochgeladen',
+        '<p style="' . NZ_MAIL_P . '">Hallo,</p>'
+        . '<p style="' . NZ_MAIL_P . '">deine Datei liegt bereit. '
+        . 'Hier ist der Link zum Teilen.</p>'
+        . nzMailDataTable([
+            'Dateiname'  => $fileName,
+            'Größe'      => $fileSizeStr,
+            'Gültig bis' => $expiryDate,
+        ])
+        . nzMailButton($downloadUrl, 'Download-Link öffnen')
+        . '<p style="' . NZ_MAIL_NOTE . '">Gib den Link an die Personen weiter, '
+        . 'die die Datei herunterladen sollen.<br>'
+        . 'Er läuft am ' . $expiryDate . ' ab.</p>'
+    );
 
     $bodyText = "Upload erfolgreich!\n\n"
         . "Datei:      {$fileName}\n"
