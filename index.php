@@ -16,12 +16,13 @@ declare(strict_types=1);
 //   memory_limit        = 256M
 
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/includes/ci.php';
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/rate_limiter.php';
 require_once __DIR__ . '/includes/uploader.php';
 require_once __DIR__ . '/includes/mailer.php';
 
-// ── API-Routing ──────────────────────────────────────────────────────────────
+// ── API-Routing ──────────────────────────────────────────────
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 if ($action !== '') {
@@ -55,10 +56,10 @@ if ($action !== '') {
     exit;
 }
 
-// ── Frontend-HTML ─────────────────────────────────────────────────────────────
+// ── Frontend-HTML ────────────────────────────────────────────
 // Ab hier: HTML-Ausgabe
 ?><!DOCTYPE html>
-<html lang="de">
+<html lang="de" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -69,29 +70,33 @@ if ($action !== '') {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@700&family=Inter:wght@400;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* ── nozilla CI Tokens ───────────────────────────────────────────── */
+        /* ── Marken aus dem CI-Dokument ─────────────────────────────── */
+<?= nzTokens() ?>
+
+        /* Brücke: die Namen, unter denen diese Seite ihre Marken kennt.
+           Links der hiesige Name, rechts der aus dem CI-Dokument. Der Abgleich
+           mit daimpad/nozilla-ci betrifft dadurch eine Datei und nicht 600 Zeilen. */
         :root {
-            --nz-green:        #00FF9C;
-            --nz-green-strong: #00E88D;
-            --nz-green-soft:   #B7FFE0;
-            --nz-paper:        #FFFEE5;
-            --nz-paper-alt:    #FAF8D4;
-            --nz-paper-deep:   #F4F1C4;
-            --nz-ink:          #000000;
-            --nz-ink-70:       rgba(0,0,0,.72);
-            --nz-ink-50:       rgba(0,0,0,.50);
-            --nz-ink-20:       rgba(0,0,0,.18);
-            --nz-error:        #FF5F1F;
-            --nz-shadow:       6px 6px 0 0 #000;
-            --nz-shadow-sm:    3px 3px 0 0 #000;
-            --nz-dur:          160ms cubic-bezier(.2,0,.0,1);
-            --nz-font-display: 'Zilla Slab', Georgia, serif;
-            --nz-font-body:    'Inter', system-ui, sans-serif;
-            --nz-font-mono:    'Space Mono', 'Courier New', monospace;
+            --nz-green:        var(--nz-signal);
+            --nz-green-strong: var(--nz-signal-strong);
+            --nz-green-soft:   var(--nz-signal-soft);
+            --nz-paper:        var(--nz-bg);
+            --nz-paper-alt:    var(--nz-surface-alt);
+            --nz-paper-deep:   var(--nz-surface-alt);
+            --nz-ink:          var(--nz-text);
+            --nz-ink-70:       var(--nz-text-muted);
+            --nz-ink-50:       var(--nz-text-faint);
+            --nz-ink-20:       var(--nz-line-soft);
+            --nz-error:        var(--nz-c-warn);
+            --nz-shadow:       6px 6px 0 0 var(--nz-shadow-color);
+            --nz-shadow-sm:    3px 3px 0 0 var(--nz-shadow-color);
+            --nz-motion:       var(--nz-dur) var(--nz-ease);
         }
 
-        /* ── Reset ───────────────────────────────────────────────────────── */
+        /* ── Reset ───────────────────────────────────────────── */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        /* Eingebettete Zeichen sitzen mittig in der Textzeile. */
+        svg { vertical-align: -0.15em; flex: none; }
         html { scroll-behavior: smooth; }
 
         body {
@@ -103,7 +108,7 @@ if ($action !== '') {
             flex-direction: column;
         }
 
-        /* ── Header ──────────────────────────────────────────────────────── */
+        /* ── Header ─────────────────────────────────────────── */
         .page-header {
             background: var(--nz-ink);
             padding: 20px 28px;
@@ -134,7 +139,7 @@ if ($action !== '') {
             color: rgba(255,254,229,.5);
         }
 
-        /* ── Layout ──────────────────────────────────────────────────────── */
+        /* ── Layout ─────────────────────────────────────────── */
         main {
             flex: 1;
             max-width: 680px;
@@ -143,7 +148,7 @@ if ($action !== '') {
             padding: 0 16px;
         }
 
-        /* ── Card ────────────────────────────────────────────────────────── */
+        /* ── Card ──────────────────────────────────────────── */
         .card {
             background: #fff;
             border: 2px solid var(--nz-ink);
@@ -152,14 +157,14 @@ if ($action !== '') {
 
         .card-body { padding: 32px; }
 
-        /* ── Drop Zone ───────────────────────────────────────────────────── */
+        /* ── Drop Zone ──────────────────────────────────────── */
         .drop-zone {
             border: 2px dashed var(--nz-ink);
             padding: 48px 24px;
             text-align: center;
             cursor: pointer;
             background: var(--nz-paper-alt);
-            transition: background var(--nz-dur);
+            transition: background var(--nz-motion);
             position: relative;
         }
 
@@ -178,7 +183,7 @@ if ($action !== '') {
             height: 100%;
         }
 
-        .drop-zone .drop-icon { font-size: 2.5rem; display: block; margin-bottom: 12px; }
+        .drop-zone .drop-icon { line-height: 0; display: block; margin-bottom: 12px; }
 
         .drop-zone .drop-title {
             font-family: var(--nz-font-display);
@@ -197,7 +202,7 @@ if ($action !== '') {
 
         .drop-zone.has-file { background: var(--nz-green-soft); border-style: solid; }
 
-        /* ── File Info ───────────────────────────────────────────────────── */
+        /* ── File Info ──────────────────────────────────────── */
         .file-info {
             display: none;
             align-items: center;
@@ -209,7 +214,7 @@ if ($action !== '') {
         }
 
         .file-info.visible { display: flex; }
-        .file-icon { font-size: 2rem; flex-shrink: 0; }
+        .file-icon { line-height: 0; flex-shrink: 0; }
         .file-details { min-width: 0; flex: 1; }
 
         .file-name {
@@ -236,12 +241,12 @@ if ($action !== '') {
             font-size: 1rem;
             padding: 4px 8px;
             font-family: var(--nz-font-mono);
-            transition: background var(--nz-dur);
+            transition: background var(--nz-motion);
         }
 
         .file-remove:hover { background: var(--nz-error); color: #fff; border-color: var(--nz-error); }
 
-        /* ── Form ────────────────────────────────────────────────────────── */
+        /* ── Form ──────────────────────────────────────────── */
         .form-group { margin-top: 20px; }
 
         label {
@@ -278,7 +283,7 @@ if ($action !== '') {
             background: #fff;
             outline: none;
             -webkit-appearance: none;
-            transition: box-shadow var(--nz-dur);
+            transition: box-shadow var(--nz-motion);
         }
 
         input[type="email"]:focus,
@@ -294,7 +299,7 @@ if ($action !== '') {
             margin-top: 6px;
         }
 
-        /* ── Progress Bar ────────────────────────────────────────────────── */
+        /* ── Progress Bar ─────────────────────────────────────── */
         .progress-wrap { display: none; margin-top: 20px; }
         .progress-wrap.visible { display: block; }
 
@@ -334,7 +339,7 @@ if ($action !== '') {
             min-height: 1.2em;
         }
 
-        /* ── Buttons ─────────────────────────────────────────────────────── */
+        /* ── Buttons ────────────────────────────────────────── */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -347,7 +352,7 @@ if ($action !== '') {
             font-family: var(--nz-font-body);
             cursor: pointer;
             text-decoration: none;
-            transition: box-shadow var(--nz-dur);
+            transition: box-shadow var(--nz-motion);
         }
 
         .btn:active:not(:disabled) { transform: translate(3px,3px); box-shadow: none !important; }
@@ -375,10 +380,10 @@ if ($action !== '') {
 
         .btn-secondary:hover:not(:disabled) { background: var(--nz-paper-deep); }
 
-        /* ── Result Panel ────────────────────────────────────────────────── */
+        /* ── Result Panel ─────────────────────────────────────── */
         #result-panel { display: none; }
 
-        .result-success-icon { text-align: center; font-size: 3rem; margin-bottom: 8px; }
+        .result-success-icon { text-align: center; line-height: 0; margin-bottom: 8px; }
 
         .result-title {
             font-family: var(--nz-font-display);
@@ -430,7 +435,7 @@ if ($action !== '') {
             text-transform: uppercase;
             font-weight: 700;
             cursor: pointer;
-            transition: background var(--nz-dur);
+            transition: background var(--nz-motion);
         }
 
         .btn-copy:hover { background: #333; }
@@ -446,7 +451,7 @@ if ($action !== '') {
             margin-top: 10px;
         }
 
-        /* ── E-Mail Section ──────────────────────────────────────────────── */
+        /* ── E-Mail Section ───────────────────────────────────── */
         .email-section {
             margin-top: 20px;
             padding-top: 20px;
@@ -483,13 +488,13 @@ if ($action !== '') {
             font-weight: 700;
             cursor: pointer;
             white-space: nowrap;
-            transition: opacity var(--nz-dur);
+            transition: opacity var(--nz-motion);
         }
 
         .btn-send-email:hover { opacity: .8; }
         .btn-send-email:disabled { opacity: .4; cursor: not-allowed; }
 
-        /* ── Alert ───────────────────────────────────────────────────────── */
+        /* ── Alert ───────────────────────────────────────────── */
         .alert {
             display: none;
             padding: 12px 16px;
@@ -504,7 +509,7 @@ if ($action !== '') {
         .alert-success { background: var(--nz-green-soft); }
         .alert-info    { background: var(--nz-paper-deep); }
 
-        /* ── Info Bar ────────────────────────────────────────────────────── */
+        /* ── Info Bar ───────────────────────────────────────── */
         .info-bar {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -519,7 +524,7 @@ if ($action !== '') {
         }
 
         .info-bar-item:last-child { border-right: none; }
-        .info-bar-item .ib-icon { font-size: 1.4rem; }
+        .info-bar-item .ib-icon { line-height: 0; margin-bottom: 6px; }
 
         .info-bar-item .ib-label {
             font-family: var(--nz-font-mono);
@@ -530,7 +535,7 @@ if ($action !== '') {
             margin-top: 6px;
         }
 
-        /* ── Footer ──────────────────────────────────────────────────────── */
+        /* ── Footer ─────────────────────────────────────────── */
         footer {
             text-align: center;
             padding: 20px;
@@ -543,7 +548,7 @@ if ($action !== '') {
             margin-top: 40px;
         }
 
-        /* ── Spinner ─────────────────────────────────────────────────────── */
+        /* ── Spinner ────────────────────────────────────────── */
         @keyframes spin { to { transform: rotate(360deg); } }
 
         .spinner {
@@ -555,7 +560,7 @@ if ($action !== '') {
             animation: spin .7s linear infinite;
         }
 
-        /* ── Responsive ──────────────────────────────────────────────────── */
+        /* ── Responsive ─────────────────────────────────────── */
         @media (max-width: 640px) {
             main { margin: 20px auto; }
             .page-header p { font-size: 10px; letter-spacing: 0.08em; }
@@ -588,13 +593,13 @@ if ($action !== '') {
 </head>
 <body>
 
-<!-- ── Header ──────────────────────────────────────────────────────────────── -->
+<!-- ── Header ────────────────────────────────────────────── -->
 <header class="page-header">
     <div class="logo">Upload<span>Ez</span></div>
     <p>Dateien sicher hochladen und per Link teilen · bis zu 2 GB</p>
 </header>
 
-<!-- ── Hauptinhalt ──────────────────────────────────────────────────────────── -->
+<!-- ── Hauptinhalt ─────────────────────────────────────────── -->
 <main>
     <div class="card">
         <div class="card-body">
@@ -605,26 +610,26 @@ if ($action !== '') {
                 <!-- Drag-and-Drop-Zone -->
                 <div class="drop-zone" id="drop-zone" role="button" aria-label="Datei auswählen oder hierher ziehen">
                     <input type="file" id="file-input" aria-label="Datei auswählen">
-                    <span class="drop-icon" aria-hidden="true">📂</span>
+                    <span class="drop-icon" aria-hidden="true"><?= nzIcon('folder-open', 40) ?></span>
                     <div class="drop-title">Datei hierher ziehen oder klicken</div>
                     <div class="drop-sub">Erlaubt: Bilder, PDF, Office, Audio, Video, Archive · Max. 2 GB</div>
                 </div>
 
                 <!-- Datei-Info -->
                 <div class="file-info" id="file-info">
-                    <span class="file-icon" id="file-type-icon" aria-hidden="true">📄</span>
+                    <span class="file-icon" id="file-type-icon" aria-hidden="true"><?= nzIcon('file', 30) ?></span>
                     <div class="file-details">
                         <div class="file-name" id="file-name-display"></div>
                         <div class="file-size" id="file-size-display"></div>
                     </div>
-                    <button class="file-remove" id="file-remove-btn" title="Datei entfernen" aria-label="Datei entfernen">✕</button>
+                    <button class="file-remove" id="file-remove-btn" title="Datei entfernen" aria-label="Datei entfernen"><?= nzIcon('xmark', 14) ?></button>
                 </div>
 
                 <!-- E-Mail (optional) -->
                 <div class="form-group">
                     <label for="email-input-upload">E-Mail (optional)</label>
                     <div class="input-wrap">
-                        <span class="input-icon" aria-hidden="true">✉️</span>
+                        <span class="input-icon" aria-hidden="true"><?= nzIcon('envelope', 16) ?></span>
                         <input type="email" id="email-input-upload"
                                placeholder="empfaenger@beispiel.de"
                                autocomplete="email">
@@ -637,7 +642,7 @@ if ($action !== '') {
                 <div class="form-group">
                     <label for="upload-token-input">Zugangscode <span style="color:var(--nz-error)">*</span></label>
                     <div class="input-wrap">
-                        <span class="input-icon" aria-hidden="true">🔑</span>
+                        <span class="input-icon" aria-hidden="true"><?= nzIcon('key', 16) ?></span>
                         <input type="password" id="upload-token-input"
                                placeholder="Zugangscode eingeben"
                                autocomplete="off" required>
@@ -649,7 +654,7 @@ if ($action !== '') {
                 <div class="form-group">
                     <label for="link-password-input">Link-Passwort (optional)</label>
                     <div class="input-wrap">
-                        <span class="input-icon" aria-hidden="true">🔒</span>
+                        <span class="input-icon" aria-hidden="true"><?= nzIcon('lock', 16) ?></span>
                         <input type="password" id="link-password-input"
                                placeholder="Leer lassen für öffentlichen Link"
                                autocomplete="new-password">
@@ -684,7 +689,7 @@ if ($action !== '') {
 
             <!-- Ergebnis-Panel (nach erfolgreichem Upload) -->
             <div id="result-panel">
-                <div class="result-success-icon" aria-hidden="true">✅</div>
+                <div class="result-success-icon" aria-hidden="true"><?= nzIcon('circle-check', 44) ?></div>
                 <div class="result-title">Upload erfolgreich!</div>
                 <div class="result-sub" id="result-sub">Dein Datei ist hochgeladen und bereit zum Teilen.</div>
 
@@ -711,7 +716,7 @@ if ($action !== '') {
 
                 <!-- Neuer Upload -->
                 <button class="btn btn-secondary" id="new-upload-btn" style="margin-top:20px;width:100%;">
-                    ↩ Neuen Upload starten
+                    <?= nzIcon('arrow-left', 14) ?> Neuen Upload starten
                 </button>
             </div><!-- /#result-panel -->
 
@@ -720,15 +725,15 @@ if ($action !== '') {
         <!-- Info-Leiste -->
         <div class="info-bar" aria-label="Features">
             <div class="info-bar-item">
-                <div class="ib-icon" aria-hidden="true">🔒</div>
+                <div class="ib-icon" aria-hidden="true"><?= nzIcon('lock', 22) ?></div>
                 <div class="ib-label">Verschlüsselte Übertragung</div>
             </div>
             <div class="info-bar-item">
-                <div class="ib-icon" aria-hidden="true">⏱️</div>
+                <div class="ib-icon" aria-hidden="true"><?= nzIcon('clock', 22) ?></div>
                 <div class="ib-label">Link läuft nach <?= EXPIRY_DAYS ?> Tagen ab</div>
             </div>
             <div class="info-bar-item">
-                <div class="ib-icon" aria-hidden="true">🗂️</div>
+                <div class="ib-icon" aria-hidden="true"><?= nzIcon('box-archive', 22) ?></div>
                 <div class="ib-label">Bis zu 2 GB</div>
             </div>
         </div>
@@ -743,13 +748,13 @@ if ($action !== '') {
 <script>
 'use strict';
 
-/* ── Konfiguration ─────────────────────────────────────────────────────────── */
+/* ── Konfiguration ───────────────────────────────────────────── */
 const MAX_FILE_SIZE = <?= MAX_FILE_SIZE ?>;          // 2 GB
 const CHUNK_SIZE    = <?= CHUNK_SIZE ?>;             // 5 MB
 const ALLOWED_EXTS  = <?= json_encode(ALLOWED_EXTENSIONS) ?>;
 const ALLOWED_MIME  = <?= json_encode(ALLOWED_MIME_TYPES) ?>;
 
-/* ── DOM-Referenzen ────────────────────────────────────────────────────────── */
+/* ── DOM-Referenzen ──────────────────────────────────────────── */
 const dropZone          = document.getElementById('drop-zone');
 const fileInput         = document.getElementById('file-input');
 const fileInfo          = document.getElementById('file-info');
@@ -780,11 +785,11 @@ const emailSuccess      = document.getElementById('email-success');
 const emailError        = document.getElementById('email-error');
 const newUploadBtn      = document.getElementById('new-upload-btn');
 
-/* ── Zustand ───────────────────────────────────────────────────────────────── */
+/* ── Zustand ──────────────────────────────────────────────── */
 let selectedFile  = null;
 let uploadToken   = null;
 
-/* ── Hilfsfunktionen ───────────────────────────────────────────────────────── */
+/* ── Hilfsfunktionen ────────────────────────────────────────── */
 function formatBytes(bytes) {
     if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(2) + ' GB';
     if (bytes >= 1048576)    return (bytes / 1048576).toFixed(2) + ' MB';
@@ -796,16 +801,36 @@ function fileExtension(name) {
     return name.split('.').pop().toLowerCase();
 }
 
-function fileEmoji(mime) {
-    if (mime.startsWith('image/'))  return '🖼️';
-    if (mime.startsWith('video/'))  return '🎬';
-    if (mime.startsWith('audio/'))  return '🎵';
-    if (mime.includes('pdf'))       return '📕';
-    if (mime.includes('zip') || mime.includes('rar') || mime.includes('7z') || mime.includes('tar')) return '📦';
-    if (mime.includes('word') || mime.includes('document')) return '📝';
-    if (mime.includes('excel') || mime.includes('sheet'))   return '📊';
-    if (mime.includes('presentation') || mime.includes('powerpoint')) return '📊';
-    return '📄';
+/* Zeichen aus dem CI-Katalog. Dieselben Pfade wie in includes/ci.php —
+   das CI lässt keine Emoji zu. */
+const NZ_ICONS = {
+    'file':        '<path d="M14 8 H38 L50 20 V56 H14 Z"/><path d="M38 8 V20 H50"/>',
+    'file-lines':  '<path d="M14 8 H38 L50 20 V56 H14 Z"/><path d="M38 8 V20 H50"/><path d="M22 30 H42"/><path d="M22 38 H42"/><path d="M22 46 H34"/>',
+    'file-pdf':    '<path d="M14 8 H38 L50 20 V56 H14 Z"/><path d="M38 8 V20 H50"/><path d="M22 34 V50"/><path d="M22 34 H29 A5 5 0 0 1 29 44 H22"/><path d="M36 34 V50 H41 A6 6 0 0 0 41 34 Z"/>',
+    'file-zipper': '<path d="M14 8 H38 L50 20 V56 H14 Z"/><path d="M38 8 V20 H50"/><path d="M26 8 V14"/><path d="M32 14 V20"/><path d="M26 20 V26"/><path d="M32 26 V32"/><rect x="24" y="34" width="12" height="14"/>',
+    'image':       '<rect x="8" y="12" width="48" height="40"/><circle cx="22" cy="25" r="5"/><path d="M12 48 L26 34 L34 42 L42 34 L52 48"/>',
+    'video':       '<rect x="6" y="18" width="34" height="28"/><path d="M40 30 L58 20 V44 L40 34 Z"/>',
+    'music':       '<path d="M24 46 V12 L54 6 V40"/><circle cx="16" cy="46" r="8"/><circle cx="46" cy="40" r="8"/><path d="M24 22 L54 16"/>',
+};
+
+function nzIcon(name, size = 20) {
+    const inner = NZ_ICONS[name] || NZ_ICONS['file'];
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="' + size +
+           '" height="' + size + '" fill="none" stroke="currentColor" stroke-width="4"' +
+           ' stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true" focusable="false">' +
+           inner + '<rect x="54" y="54" width="6" height="6" fill="#00FF9C" stroke="none"/></svg>';
+}
+
+/** Welches Zeichen zu welchem MIME-Typ gehört. */
+function iconForMime(mime) {
+    if (mime.startsWith('image/')) return 'image';
+    if (mime.startsWith('video/')) return 'video';
+    if (mime.startsWith('audio/')) return 'music';
+    if (mime.includes('pdf'))      return 'file-pdf';
+    if (mime.startsWith('text/'))  return 'file-lines';
+    if (/zip|rar|7z|tar|gzip|compressed/.test(mime)) return 'file-zipper';
+    if (/word|excel|powerpoint|officedocument|document|sheet|presentation/.test(mime)) return 'file-lines';
+    return 'file';
 }
 
 /** UUID v4 im Browser erzeugen */
@@ -825,7 +850,7 @@ function hideAlert(el) {
     el.textContent = '';
 }
 
-/* ── Datei validieren (clientseitig, Vorprüfung) ───────────────────────────── */
+/* ── Datei validieren (clientseitig, Vorprüfung) ───────────────────────── */
 function validateFile(file) {
     if (file.size === 0)            return 'Die Datei ist leer.';
     if (file.size > MAX_FILE_SIZE)  return `Die Datei ist zu groß (max. 2 GB). Deine Datei: ${formatBytes(file.size)}`;
@@ -837,7 +862,7 @@ function validateFile(file) {
     return null;
 }
 
-/* ── Datei setzen ──────────────────────────────────────────────────────────── */
+/* ── Datei setzen ────────────────────────────────────────────── */
 function setFile(file) {
     const err = validateFile(file);
     if (err) {
@@ -849,14 +874,14 @@ function setFile(file) {
     selectedFile        = file;
     fileNameDisplay.textContent = file.name;
     fileSizeDisplay.textContent = formatBytes(file.size);
-    fileTypeIcon.textContent    = fileEmoji(file.type || '');
+    fileTypeIcon.innerHTML      = nzIcon(iconForMime(file.type || ''), 30);
     fileInfo.classList.add('visible');
     dropZone.classList.add('has-file');
     uploadBtn.disabled          = false;
     uploadBtnText.textContent   = 'Hochladen starten';
 }
 
-/* ── Datei entfernen ───────────────────────────────────────────────────────── */
+/* ── Datei entfernen ─────────────────────────────────────────── */
 function clearFile() {
     selectedFile = null;
     fileInput.value = '';
@@ -871,7 +896,7 @@ function clearFile() {
     progressWrap.classList.remove('visible');
 }
 
-/* ── Fortschritt aktualisieren ─────────────────────────────────────────────── */
+/* ── Fortschritt aktualisieren ──────────────────────────────────── */
 function setProgress(pct, label, speedBps, etaSec) {
     progressFill.style.width = pct + '%';
     progressPct.textContent  = Math.round(pct) + '%';
@@ -899,7 +924,7 @@ function formatEta(sec) {
     return Math.ceil(sec / 3600) + ' Std.';
 }
 
-/* ── Drag-and-Drop ─────────────────────────────────────────────────────────── */
+/* ── Drag-and-Drop ──────────────────────────────────────────── */
 ['dragenter', 'dragover'].forEach(evt =>
     dropZone.addEventListener(evt, e => {
         e.preventDefault();
@@ -928,7 +953,7 @@ fileRemoveBtn.addEventListener('click', e => {
     clearFile();
 });
 
-/* ── Chunked Upload ────────────────────────────────────────────────────────── */
+/* ── Chunked Upload ─────────────────────────────────────────── */
 
 const MAX_RETRIES    = 3;
 const RETRY_DELAYS   = [1000, 2000, 4000]; // ms zwischen Versuchen
@@ -1011,7 +1036,7 @@ async function uploadFile(file, email, uploadToken = '', linkPassword = '') {
 
         const data = await sendChunk(fd, i, totalChunks);
 
-        // ── ETA berechnen ────────────────────────────────────────────────────
+        // ── ETA berechnen ─────────────────────────────────────────
         bytesUploaded += chunkSize;
         const elapsedSec = (Date.now() - startTime) / 1000;
         const speedBps   = elapsedSec > 0.5 ? bytesUploaded / elapsedSec : 0;
@@ -1028,7 +1053,7 @@ async function uploadFile(file, email, uploadToken = '', linkPassword = '') {
     return lastResult;
 }
 
-/* ── Upload-Button ─────────────────────────────────────────────────────────── */
+/* ── Upload-Button ──────────────────────────────────────────── */
 uploadBtn.addEventListener('click', async () => {
     if (!selectedFile) return;
 
@@ -1047,7 +1072,7 @@ uploadBtn.addEventListener('click', async () => {
             throw new Error('Upload erfolgreich, aber kein Download-Link erhalten.');
         }
 
-        setProgress(100, 'Abgeschlossen ✓');
+        setProgress(100, 'Abgeschlossen');
         uploadToken = result.token;
 
         // Ergebnis anzeigen
@@ -1057,7 +1082,7 @@ uploadBtn.addEventListener('click', async () => {
 
         if (result.expiry) {
             const d = new Date(result.expiry + 'Z');
-            expiryNote.textContent = `⚠️ Dieser Link läuft am ${d.toLocaleDateString('de-DE')} ab.`;
+            expiryNote.textContent = `Dieser Link läuft am ${d.toLocaleDateString('de-DE')} ab.`;
         }
 
         // E-Mail-Feld vorausfüllen
@@ -1072,7 +1097,7 @@ uploadBtn.addEventListener('click', async () => {
     }
 });
 
-/* ── Link kopieren ─────────────────────────────────────────────────────────── */
+/* ── Link kopieren ──────────────────────────────────────────── */
 copyBtn.addEventListener('click', async () => {
     try {
         await navigator.clipboard.writeText(downloadLink.value);
@@ -1080,7 +1105,7 @@ copyBtn.addEventListener('click', async () => {
         downloadLink.select();
         document.execCommand('copy');
     }
-    copyBtn.textContent = '✓ Kopiert!';
+    copyBtn.textContent = 'Kopiert';
     copyBtn.classList.add('copied');
     setTimeout(() => {
         copyBtn.textContent = 'Kopieren';
@@ -1088,7 +1113,7 @@ copyBtn.addEventListener('click', async () => {
     }, 2000);
 });
 
-/* ── E-Mail versenden ──────────────────────────────────────────────────────── */
+/* ── E-Mail versenden ────────────────────────────────────────── */
 sendEmailBtn.addEventListener('click', async () => {
     const email = emailResult.value.trim();
     hideAlert(emailSuccess);
@@ -1105,7 +1130,7 @@ sendEmailBtn.addEventListener('click', async () => {
     }
 
     sendEmailBtn.disabled  = true;
-    sendEmailBtn.textContent = '⏳ Senden…';
+    sendEmailBtn.textContent = 'Senden…';
 
     try {
         const fd = new FormData();
@@ -1118,8 +1143,8 @@ sendEmailBtn.addEventListener('click', async () => {
 
         if (!data.success) throw new Error(data.error || 'Unbekannter Fehler.');
 
-        showAlert(emailSuccess, `✓ E-Mail erfolgreich an ${email} gesendet!`);
-        sendEmailBtn.textContent = '✓ Gesendet';
+        showAlert(emailSuccess, `E-Mail an ${email} gesendet.`);
+        sendEmailBtn.textContent = 'Gesendet';
 
     } catch (err) {
         showAlert(emailError, err.message || 'E-Mail konnte nicht gesendet werden.');
@@ -1128,7 +1153,7 @@ sendEmailBtn.addEventListener('click', async () => {
     }
 });
 
-/* ── Neuer Upload ──────────────────────────────────────────────────────────── */
+/* ── Neuer Upload ───────────────────────────────────────────── */
 newUploadBtn.addEventListener('click', () => {
     resultPanel.style.display = 'none';
     uploadPanel.style.display = 'block';
