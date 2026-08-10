@@ -10,10 +10,11 @@ declare(strict_types=1);
  */
 
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/includes/ci.php';
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/mailer.php';
 
-// ── Session starten ──────────────────────────────────────────────────────────
+// ── Session starten ────────────────────────────────────────────
 session_set_cookie_params([
     'lifetime' => ADMIN_SESSION_LIFETIME,
     'path'     => '/',
@@ -29,7 +30,7 @@ $isLoggedIn  = isset($_SESSION['uploadez_admin'])
                && isset($_SESSION['uploadez_admin_ts'])
                && (time() - $_SESSION['uploadez_admin_ts']) < ADMIN_SESSION_LIFETIME;
 
-// ── Abmelden ─────────────────────────────────────────────────────────────────
+// ── Abmelden ───────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
     // CSRF vor Destroy prüfen (Token liegt noch in der Session)
     $submitted = $_POST['csrf_token'] ?? '';
@@ -42,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
     exit;
 }
 
-// ── CSRF-Token erzeugen / prüfen ──────────────────────────────────────────────
+// ── CSRF-Token erzeugen / prüfen ───────────────────────────────────
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
@@ -53,7 +54,7 @@ function verifyCsrf(): bool {
     return hash_equals($_SESSION['csrf_token'] ?? '', $submitted);
 }
 
-// ── Einloggen ────────────────────────────────────────────────────────────────
+// ── Einloggen ──────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['password'])) {
     $hash = ADMIN_PASSWORD_HASH;
 
@@ -75,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['password'])) {
     }
 }
 
-// ── Datei löschen (POST-Action) ───────────────────────────────────────────────
+// ── Datei löschen (POST-Action) ────────────────────────────────────
 $deleteMsg = '';
 if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_token'])) {
     if (!verifyCsrf()) {
@@ -104,7 +105,7 @@ if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete
     exit;
 }
 
-// ── Daten laden (nur wenn eingeloggt) ────────────────────────────────────────
+// ── Daten laden (nur wenn eingeloggt) ───────────────────────────────
 $files      = [];
 $stats      = ['total' => 0, 'active' => 0, 'expired' => 0, 'total_size' => 0];
 $sortCol    = in_array($_GET['sort'] ?? '', ['created_at', 'expiry', 'file_size', 'download_count', 'original_name'], true)
@@ -162,21 +163,16 @@ if ($isLoggedIn) {
     }
 }
 
-// ── Hilfsfunktionen ───────────────────────────────────────────────────────────
+// ── Hilfsfunktionen ────────────────────────────────────────────
 function isExpired(string $expiry): bool {
     return new DateTimeImmutable($expiry, new DateTimeZone('UTC'))
            < new DateTimeImmutable('now', new DateTimeZone('UTC'));
 }
 
-function fileEmoji(string $mime): string {
-    if (str_starts_with($mime, 'image/'))  return '🖼️';
-    if (str_starts_with($mime, 'video/'))  return '🎬';
-    if (str_starts_with($mime, 'audio/'))  return '🎵';
-    if (str_contains($mime, 'pdf'))        return '📕';
-    if (str_contains($mime, 'zip') || str_contains($mime, 'rar') || str_contains($mime, '7z')) return '📦';
-    if (str_contains($mime, 'word') || str_contains($mime, 'document'))  return '📝';
-    if (str_contains($mime, 'excel') || str_contains($mime, 'sheet'))    return '📊';
-    return '📄';
+// Zeichen statt Emoji: das CI lässt keine Emoji zu. Die Zuordnung
+// MIME-Typ → Motiv steht in includes/ci.php.
+function fileIcon(string $mime): string {
+    return nzIcon(nzIconForMime($mime), 22);
 }
 
 function sortUrl(string $col): string {
@@ -188,14 +184,16 @@ function sortUrl(string $col): string {
 
 function sortIcon(string $col): string {
     global $sortCol, $sortDir;
-    if ($sortCol !== $col) return '<span style="opacity:.3">↕</span>';
-    return $sortDir === 'ASC' ? '↑' : '↓';
+    if ($sortCol !== $col) {
+        return '<span style="opacity:.35">' . nzIcon('sort', 12) . '</span>';
+    }
+    return nzIcon($sortDir === 'ASC' ? 'arrow-up' : 'arrow-down', 12);
 }
 
 $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 
 ?><!DOCTYPE html>
-<html lang="de">
+<html lang="de" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -204,32 +202,35 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@700&family=Inter:wght@400;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* ── nozilla CI Tokens ───────────────────────────────────────────── */
+        /* ── Marken aus dem CI-Dokument ─────────────────────────────── */
+<?= nzTokens() ?>
+
+        /* Brücke: die Namen, unter denen diese Seite ihre Marken kennt.
+           Links der hiesige Name, rechts der aus dem CI-Dokument. */
         :root {
-            --nz-green:        #00FF9C;
-            --nz-green-strong: #00E88D;
-            --nz-green-soft:   #B7FFE0;
-            --nz-paper:        #FFFEE5;
-            --nz-paper-alt:    #FAF8D4;
-            --nz-paper-deep:   #F4F1C4;
-            --nz-ink:          #000000;
-            --nz-ink-70:       rgba(0,0,0,.72);
-            --nz-ink-50:       rgba(0,0,0,.50);
-            --nz-ink-20:       rgba(0,0,0,.18);
-            --nz-error:        #FF5F1F;
-            --nz-shadow:       6px 6px 0 0 #000;
-            --nz-shadow-sm:    3px 3px 0 0 #000;
-            --nz-dur:          160ms cubic-bezier(.2,0,.0,1);
-            --nz-font-display: 'Zilla Slab', Georgia, serif;
-            --nz-font-body:    'Inter', system-ui, sans-serif;
-            --nz-font-mono:    'Space Mono', 'Courier New', monospace;
+            --nz-green:        var(--nz-signal);
+            --nz-green-strong: var(--nz-signal-strong);
+            --nz-green-soft:   var(--nz-signal-soft);
+            --nz-paper:        var(--nz-bg);
+            --nz-paper-alt:    var(--nz-surface-alt);
+            --nz-paper-deep:   var(--nz-surface-alt);
+            --nz-ink:          var(--nz-text);
+            --nz-ink-70:       var(--nz-text-muted);
+            --nz-ink-50:       var(--nz-text-faint);
+            --nz-ink-20:       var(--nz-line-soft);
+            --nz-error:        var(--nz-c-warn);
+            --nz-shadow:       6px 6px 0 0 var(--nz-shadow-color);
+            --nz-shadow-sm:    3px 3px 0 0 var(--nz-shadow-color);
+            --nz-motion:       var(--nz-dur) var(--nz-ease);
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        /* Eingebettete Zeichen sitzen mittig in der Textzeile. */
+        svg { vertical-align: -0.15em; flex: none; }
         html { scroll-behavior: smooth; }
         body { font-family: var(--nz-font-body); background: var(--nz-paper); color: var(--nz-ink); min-height: 100vh; }
 
-        /* ── Header ─────────────────────────────────────────────────────── */
+        /* ── Header ──────────────────────────────────────────── */
         .page-header {
             background: var(--nz-ink);
             padding: 20px 28px;
@@ -274,11 +275,11 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
             font-weight: 700;
             cursor: pointer;
             text-decoration: none;
-            transition: background var(--nz-dur);
+            transition: background var(--nz-motion);
         }
         .btn-ghost:hover { background: rgba(255,254,229,.18); }
 
-        /* ── Login ──────────────────────────────────────────────────────── */
+        /* ── Login ───────────────────────────────────────────── */
         .login-wrap { display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 72px); padding: 20px; }
         .login-card {
             background: #fff;
@@ -311,7 +312,7 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
             background: #fff;
             outline: none;
             -webkit-appearance: none;
-            transition: box-shadow var(--nz-dur);
+            transition: box-shadow var(--nz-motion);
         }
         input:focus { box-shadow: var(--nz-shadow-sm); }
         .btn-primary {
@@ -324,7 +325,7 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
             font-weight: 700;
             cursor: pointer;
             box-shadow: var(--nz-shadow);
-            transition: background var(--nz-dur), box-shadow var(--nz-dur);
+            transition: background var(--nz-motion), box-shadow var(--nz-motion);
         }
         .btn-primary:hover { background: var(--nz-green-strong); }
         .btn-primary:active { transform: translate(3px,3px); box-shadow: none; }
@@ -332,10 +333,10 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
         .alert-error   { background: #FFD5C5; }
         .alert-success { background: var(--nz-green-soft); }
 
-        /* ── Hauptlayout ────────────────────────────────────────────────── */
+        /* ── Hauptlayout ──────────────────────────────────────── */
         .main { max-width: 1300px; margin: 0 auto; padding: 28px 20px 48px; }
 
-        /* ── Stat-Karten ────────────────────────────────────────────────── */
+        /* ── Stat-Karten ──────────────────────────────────────── */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 24px; }
         .stat-card {
             background: #fff;
@@ -359,10 +360,10 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
             margin-top: 6px;
         }
 
-        /* ── Toolbar ────────────────────────────────────────────────────── */
+        /* ── Toolbar ────────────────────────────────────────── */
         .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
         .search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 340px; }
-        .search-wrap .ico { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--nz-ink-50); pointer-events: none; }
+        .search-wrap .ico { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); line-height: 0; color: var(--nz-ink-50); pointer-events: none; }
         .search-wrap input { padding-left: 34px; }
         .btn-sm {
             padding: 9px 16px;
@@ -376,7 +377,7 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
             cursor: pointer;
             color: var(--nz-ink);
             text-decoration: none;
-            transition: background var(--nz-dur);
+            transition: background var(--nz-motion);
             box-shadow: var(--nz-shadow-sm);
         }
         .btn-sm:hover { background: var(--nz-paper-alt); }
@@ -384,7 +385,7 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
         .btn-danger-sm { background: #FFD5C5; }
         .btn-danger-sm:hover { background: #FFBEA8; }
 
-        /* ── Tabelle ────────────────────────────────────────────────────── */
+        /* ── Tabelle ────────────────────────────────────────── */
         .table-wrap {
             background: #fff;
             border: 2px solid var(--nz-ink);
@@ -412,7 +413,7 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 
         /* Dateiname-Zelle */
         .file-cell { display: flex; align-items: center; gap: 10px; }
-        .file-cell .f-icon { font-size: 1.3rem; flex-shrink: 0; }
+        .file-cell .f-icon { line-height: 0; flex-shrink: 0; }
         .file-cell .f-name { font-weight: 600; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .file-cell .f-mime { font-family: var(--nz-font-mono); font-size: 10px; letter-spacing: 0.06em; color: var(--nz-ink-70); }
 
@@ -442,7 +443,7 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
             cursor: pointer;
             color: var(--nz-ink);
             white-space: nowrap;
-            transition: background var(--nz-dur);
+            transition: background var(--nz-motion);
         }
         .btn-copy-row:hover  { background: var(--nz-green-soft); }
         .btn-copy-row.copied { background: var(--nz-green); border-color: var(--nz-ink); }
@@ -474,11 +475,11 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
             color: var(--nz-ink-70);
             font-size: .95rem;
             padding: 4px 8px;
-            transition: background var(--nz-dur), border-color var(--nz-dur);
+            transition: background var(--nz-motion), border-color var(--nz-motion);
         }
         .btn-del:hover { color: var(--nz-ink); background: #FFD5C5; border-color: var(--nz-ink); }
 
-        /* ── Lösch-Modal ──────────────────────────────────────────────────── */
+        /* ── Lösch-Modal ──────────────────────────────────────── */
         .modal-backdrop {
             display: none; position: fixed; inset: 0;
             background: rgba(0,0,0,.55); z-index: 100;
@@ -495,7 +496,7 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
             animation: modalIn .15s ease-out;
         }
         @keyframes modalIn { from { transform: translate(-6px,-6px); opacity: 0; } to { transform: translate(0,0); opacity: 1; } }
-        .modal-icon { font-size: 2.5rem; text-align: center; margin-bottom: 12px; }
+        .modal-icon { line-height: 0; text-align: center; margin-bottom: 12px; }
         .modal h3 { font-family: var(--nz-font-display); font-size: 1.3rem; font-weight: 700; text-align: center; margin-bottom: 8px; }
         .modal p { font-family: var(--nz-font-mono); font-size: 12px; letter-spacing: 0.06em; color: var(--nz-ink-70); text-align: center; margin-bottom: 24px; word-break: break-word; }
         .modal-actions { display: flex; gap: 10px; }
@@ -510,7 +511,7 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
             font-weight: 700;
             cursor: pointer;
             color: var(--nz-ink);
-            transition: background var(--nz-dur);
+            transition: background var(--nz-motion);
         }
         .modal-actions .btn-cancel:hover { background: var(--nz-paper-deep); }
         .modal-actions .btn-confirm-del {
@@ -525,16 +526,16 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
             font-weight: 700;
             cursor: pointer;
             box-shadow: var(--nz-shadow-sm);
-            transition: opacity var(--nz-dur);
+            transition: opacity var(--nz-motion);
         }
         .modal-actions .btn-confirm-del:hover { opacity: .88; }
         .modal-actions .btn-confirm-del:active { transform: translate(3px,3px); box-shadow: none; }
 
         /* Leer-Zustand */
         .empty-state { text-align: center; padding: 60px 20px; color: var(--nz-ink-50); }
-        .empty-state .empty-icon { font-size: 3rem; margin-bottom: 12px; }
+        .empty-state .empty-icon { line-height: 0; margin-bottom: 12px; }
 
-        /* ── Paginierung ─────────────────────────────────────────────────── */
+        /* ── Paginierung ─────────────────────────────────────── */
         .pagination { display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 20px; flex-wrap: wrap; }
         .page-btn {
             padding: 7px 13px;
@@ -547,13 +548,13 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
             color: var(--nz-ink);
             text-decoration: none;
             background: #fff;
-            transition: background var(--nz-dur);
+            transition: background var(--nz-motion);
         }
         .page-btn:hover { background: var(--nz-paper-alt); }
         .page-btn.active { background: var(--nz-green); border-color: var(--nz-ink); }
         .page-btn:disabled, .page-btn.disabled { opacity: .4; pointer-events: none; }
 
-        /* ── Responsive ──────────────────────────────────────────────────── */
+        /* ── Responsive ──────────────────────────────────────── */
         @media (max-width: 900px) { .col-email, .col-date { display: none; } }
 
         @media (max-width: 640px) {
@@ -624,12 +625,12 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 </head>
 <body>
 
-<!-- ── Header ───────────────────────────────────────────────────────────────── -->
+<!-- ── Header ──────────────────────────────────────────────── -->
 <header class="page-header">
     <div class="logo">Upload<span>Ez</span> <small>Admin</small></div>
     <?php if ($isLoggedIn): ?>
     <div class="header-actions">
-        <a href="/" class="btn-ghost">← Zum Upload</a>
+        <a href="/" class="btn-ghost"><?= nzIcon('arrow-left', 14) ?> Zum Upload</a>
         <form method="POST" action="admin.php" style="display:inline">
             <input type="hidden" name="logout" value="1">
             <input type="hidden" name="csrf_token" value="<?= $h($csrfToken) ?>">
@@ -640,7 +641,7 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 </header>
 
 <?php if (!$isLoggedIn): ?>
-<!-- ── Login ─────────────────────────────────────────────────────────────────── -->
+<!-- ── Login ────────────────────────────────────────────────── -->
 <div class="login-wrap">
     <div class="login-card">
         <h2>Admin-Bereich</h2>
@@ -662,13 +663,15 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 </div>
 
 <?php else: ?>
-<!-- ── Hauptinhalt ────────────────────────────────────────────────────────────── -->
+<!-- ── Hauptinhalt ─────────────────────────────────────────────── -->
 <main class="main">
 
     <?php if (isset($_GET['deleted'])): ?>
     <div class="alert <?= $_GET['deleted'] === 'success' ? 'alert-success' : 'alert-error' ?>"
          style="margin-bottom:16px;">
-        <?= $_GET['deleted'] === 'success' ? '✓ Datei erfolgreich gelöscht.' : '✗ Fehler beim Löschen.' ?>
+        <?= $_GET['deleted'] === 'success'
+        ? nzIcon('circle-check', 16) . ' Datei erfolgreich gelöscht.'
+        : nzIcon('xmark', 16) . ' Fehler beim Löschen.' ?>
     </div>
     <?php endif; ?>
 
@@ -698,13 +701,13 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
         <input type="hidden" name="dir"  value="<?= $sortDir === 'ASC' ? 'asc' : 'desc' ?>">
         <div class="toolbar">
             <div class="search-wrap">
-                <span class="ico">🔍</span>
+                <span class="ico"><?= nzIcon('magnifying-glass', 16) ?></span>
                 <input type="search" name="q" value="<?= $h($search) ?>"
                        placeholder="Dateiname oder E-Mail suchen…">
             </div>
             <button type="submit" class="btn-sm">Suchen</button>
             <?php if ($search !== ''): ?>
-            <a href="admin.php" class="btn-sm">✕ Zurücksetzen</a>
+            <a href="admin.php" class="btn-sm"><?= nzIcon('xmark', 13) ?> Zurücksetzen</a>
             <?php endif; ?>
             <span style="margin-left:auto;font-size:.82rem;color:var(--nz-ink-70);">
                 <?= number_format($totalRows ?? 0) ?> Einträge
@@ -716,7 +719,7 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
     <div class="table-wrap">
         <?php if (empty($files)): ?>
         <div class="empty-state">
-            <div class="empty-icon">📭</div>
+            <div class="empty-icon"><?= nzIcon('inbox', 48) ?></div>
             <p><?= $search !== '' ? 'Keine Treffer für „' . $h($search) . '".' : 'Noch keine Uploads vorhanden.' ?></p>
         </div>
         <?php else: ?>
@@ -756,7 +759,7 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
                     <!-- Dateiname -->
                     <td data-label="Datei">
                         <div class="file-cell">
-                            <span class="f-icon"><?= fileEmoji($f['mime_type']) ?></span>
+                            <span class="f-icon"><?= fileIcon($f['mime_type']) ?></span>
                             <div>
                                 <div class="f-name" title="<?= $h($f['original_name']) ?>"><?= $h($f['original_name']) ?></div>
                                 <div class="f-mime"><?= $h($f['mime_type']) ?></div>
@@ -806,7 +809,7 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
                             <input type="hidden" name="delete_token" value="<?= $h($f['token']) ?>">
                             <button type="button" class="btn-del" title="Datei löschen"
                                     onclick="openDeleteModal('del-<?= $h($f['token']) ?>', '<?= $h(addslashes($f['original_name'])) ?>')">
-                                🗑️
+                                <?= nzIcon('trash', 16) ?>
                             </button>
                         </form>
                     </td>
@@ -839,10 +842,10 @@ $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 </main>
 <?php endif; ?>
 
-<!-- ── Lösch-Bestätigungs-Modal ───────────────────────────────────────────── -->
+<!-- ── Lösch-Bestätigungs-Modal ──────────────────────────────────── -->
 <div class="modal-backdrop" id="deleteModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal">
-        <div class="modal-icon">🗑️</div>
+        <div class="modal-icon"><?= nzIcon('trash', 34) ?></div>
         <h3 id="modalTitle">Datei löschen?</h3>
         <p id="modalFileName"></p>
         <div class="modal-actions">
@@ -896,7 +899,7 @@ async function copyUrl(btn) {
         document.execCommand('copy');
         document.body.removeChild(ta);
     }
-    btn.textContent = '✓ Kopiert!';
+    btn.textContent = 'Kopiert';
     btn.classList.add('copied');
     setTimeout(() => {
         btn.textContent = 'Kopieren';
