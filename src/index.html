@@ -1,27 +1,200 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="A modern website project">
-    <title>Website Project</title>
-    <link rel="stylesheet" href="./styles/main.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="UploadEz – Dateien bis 2 GB hochladen und per Link teilen. Selbst gehostet auf dem eigenen LAMP-Server.">
+<title>UploadEz · Sicheres File-Sharing</title>
+<link rel="icon" href="./favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@700&family=Inter:wght@400;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./styles/main.css">
 </head>
 <body>
-    <div id="app">
-        <header class="header">
-            <h1>Welcome to Website Project</h1>
-        </header>
-        <main class="main">
-            <section class="hero">
-                <h2>Willkommen!</h2>
-                <p>Dies ist ein Beispiel einer modernen Website-Projektstruktur.</p>
-            </section>
-        </main>
-        <footer class="footer">
-            <p>&copy; 2026 Website Project. All rights reserved.</p>
-        </footer>
+
+<!-- ── Kopfband ────────────────────────────────────────────────── -->
+<header class="band">
+  <div class="wrap">
+    <a class="wordmark" href="./">Upload<span>Ez</span></a>
+    <div class="band-actions">
+      <a class="band-link label" href="https://github.com/daimpad/uploader">Quellcode</a>
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-pressed="false">
+        <span id="theme-icon" aria-hidden="true"></span>
+        <span id="theme-label">Dunkel</span>
+      </button>
     </div>
-    <script type="module" src="./scripts/main.js"></script>
+  </div>
+</header>
+
+<!-- ── Aufmacher ───────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="wrap">
+    <p class="kicker label">Selbst gehostet · LAMP · PHP 8</p>
+    <h1>Dateien teilen,<br>ohne sie&nbsp;wegzugeben.</h1>
+    <p class="claim">
+      UploadEz läuft auf deinem eigenen Server. Dateien bis 2 GB, ein Link mit
+      Ablaufdatum, auf Wunsch <mark class="g">passwortgeschützt</mark>. Kein
+      fremder Anbieter zwischen dir und deinen Daten.
+    </p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="https://github.com/daimpad/uploader">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true" focusable="false"><path d="M32 10 V44"/><path d="M18 32 L32 46 L46 32"/><path d="M10 54 H54"/><rect x="54" y="54" width="6" height="6" fill="#00FF9C" stroke="none"/></svg>
+        Auf GitHub ansehen
+      </a>
+      <a class="btn btn-secondary" href="#einrichten">Selbst einrichten</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Merkmale ────────────────────────────────────────────────── -->
+<section class="section">
+  <div class="wrap">
+    <p class="label">Was es kann</p>
+    <h2>Sechs Dinge, die zählen</h2>
+
+    <div class="grid">
+
+      <article class="card">
+        <div class="icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true" focusable="false"><path d="M32 54 V10"/><path d="M18 24 L32 8 L46 24"/><path d="M10 54 H54"/><rect x="54" y="54" width="6" height="6" fill="#00FF9C" stroke="none"/></svg>
+        </div>
+        <h3>Große Dateien</h3>
+        <p>
+          Bis 2 GB. Der Browser zerlegt sie in 5-MB-Stücke und schickt sie
+          einzeln. Bricht eine Verbindung ab, läuft nur das Stück neu, nicht
+          die ganze Datei.
+        </p>
+      </article>
+
+      <article class="card">
+        <div class="icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true" focusable="false"><rect x="10" y="28" width="44" height="28"/><path d="M20 28 V18 A12 12 0 0 1 44 18 V28"/><path d="M32 38 V46"/><rect x="54" y="54" width="6" height="6" fill="#00FF9C" stroke="none"/></svg>
+        </div>
+        <h3>Passwort pro Link</h3>
+        <p>
+          Wer den Link hat, kommt trotzdem nicht rein. Das Passwort wird als
+          bcrypt-Hash gespeichert, nicht im Klartext.
+        </p>
+      </article>
+
+      <article class="card">
+        <div class="icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true" focusable="false"><circle cx="32" cy="32" r="22"/><path d="M32 16 V32 L43 40"/><rect x="54" y="54" width="6" height="6" fill="#00FF9C" stroke="none"/></svg>
+        </div>
+        <h3>Links laufen ab</h3>
+        <p>
+          Nach sieben Tagen ist Schluss, einstellbar. Ein Cronjob räumt Datei
+          und Datenbankeintrag zusammen weg — nicht nur den Eintrag.
+        </p>
+      </article>
+
+      <article class="card">
+        <div class="icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true" focusable="false"><path d="M32 8 L54 16 V32 A26 26 0 0 1 32 56 A26 26 0 0 1 10 32 V16 Z"/><path d="M22 32 L29 39 L43 25"/><rect x="54" y="54" width="6" height="6" fill="#00FF9C" stroke="none"/></svg>
+        </div>
+        <h3>Geprüfte Dateitypen</h3>
+        <p>
+          Der Server sieht sich die fertige Datei selbst an, statt dem Browser
+          zu glauben. Erkannter Typ und Dateiendung müssen zusammenpassen.
+        </p>
+      </article>
+
+      <article class="card">
+        <div class="icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true" focusable="false"><path d="M14 54 V36"/><path d="M32 54 V12"/><path d="M50 54 V26"/><rect x="54" y="54" width="6" height="6" fill="#00FF9C" stroke="none"/></svg>
+        </div>
+        <h3>Bremse gegen Missbrauch</h3>
+        <p>
+          Pro IP-Adresse ein Limit im Zeitfenster. Die Zählung läuft in einer
+          Datenbanktransaktion, damit gleichzeitige Anfragen nicht
+          durchrutschen.
+        </p>
+      </article>
+
+      <article class="card">
+        <div class="icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true" focusable="false"><rect x="8" y="12" width="48" height="40"/><path d="M8 24 H56"/><path d="M20 36 H44"/><rect x="54" y="54" width="6" height="6" fill="#00FF9C" stroke="none"/></svg>
+        </div>
+        <h3>Übersicht für dich</h3>
+        <p>
+          Ein passwortgeschützter Bereich zeigt alle Uploads mit Größe, Status,
+          Zahl der Downloads und Ablauf. Löschen inklusive.
+        </p>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── Ablauf ──────────────────────────────────────────────────── -->
+<section class="section">
+  <div class="wrap">
+    <p class="label">Wie es läuft</p>
+    <h2>Drei Schritte</h2>
+
+    <div class="steps">
+      <div class="step">
+        <div class="num">1</div>
+        <h3>Datei wählen</h3>
+        <p>Hineinziehen oder klicken. Größe und Endung werden sofort geprüft.</p>
+      </div>
+      <div class="step">
+        <div class="num">2</div>
+        <h3>Hochladen</h3>
+        <p>Fortschritt, Geschwindigkeit und verbleibende Zeit stehen daneben.</p>
+      </div>
+      <div class="step">
+        <div class="num">3</div>
+        <h3>Link teilen</h3>
+        <p>Kopieren oder direkt per E-Mail verschicken. Fertig.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Einrichten ──────────────────────────────────────────────── -->
+<section class="section" id="einrichten">
+  <div class="wrap">
+    <p class="label">Voraussetzungen</p>
+    <h2>Was der Server braucht</h2>
+
+    <table class="facts">
+      <tbody>
+        <tr><th>PHP</th><td>8.0 oder neuer, mit <code>fileinfo</code></td></tr>
+        <tr><th>Datenbank</th><td>MySQL 5.7+ oder MariaDB 10.3+</td></tr>
+        <tr><th>Webserver</th><td>Apache 2.4+ mit <code>mod_rewrite</code> und <code>mod_headers</code></td></tr>
+        <tr><th>PHP-Limits</th><td><code>upload_max_filesize</code> und <code>post_max_size</code> auf 2G</td></tr>
+        <tr><th>Optional</th><td>Composer für PHPMailer — sonst greift <code>mail()</code></td></tr>
+        <tr><th>Einrichtung</th><td>Repository klonen, <code>.env</code> ausfüllen, <code>schema.sql</code> einspielen</td></tr>
+      </tbody>
+    </table>
+
+    <div class="note">
+      <div class="icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="22" height="22" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true" focusable="false"><circle cx="32" cy="32" r="22"/><path d="M32 28 V44"/><path d="M32 20 V23"/><rect x="54" y="54" width="6" height="6" fill="#00FF9C" stroke="none"/></svg>
+      </div>
+      <p>
+        <strong>Diese Seite ist nur die Beschreibung.</strong>
+        UploadEz braucht PHP und eine Datenbank und kann darum nicht auf GitHub
+        Pages laufen. Die Anwendung selbst gehört auf deinen eigenen Server —
+        die Schritte dafür stehen in der <code>README.md</code> im Repository.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Fußzeile ───────────────────────────────────────────────── -->
+<footer>
+  <div class="wrap">
+    <span class="label">UploadEz · Sicheres File-Sharing</span>
+    <span class="label">
+      Gestaltung nach dem
+      <a href="https://github.com/daimpad/nozilla-ci">nozilla&nbsp;CI</a>
+    </span>
+  </div>
+</footer>
+
+<script src="./scripts/main.js"></script>
 </body>
 </html>
