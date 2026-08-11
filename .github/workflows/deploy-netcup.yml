@@ -1,0 +1,89 @@
+name: Deploy to Netcup
+
+# Löst nach jedem Merge auf main das Deployment auf dem Netcup-Server aus.
+# Gebaut wird nicht hier: der Server holt sich den Stand selbst per git.
+# Dieser Workflow stößt ihn nur an. Einrichtung siehe deploy/README.md.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+# Zwei Deployments gleichzeitig würden sich im selben Verzeichnis begegnen.
+concurrency:
+  group: deploy-netcup
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Optional: unter Settings › Environments lässt sich hier eine Freigabe
+    # oder eine IP-Beschränkung hinterlegen.
+    environment: production
+
+    steps:
+      - name: Zugangsdaten prüfen
+        env:
+          SSH_KEY: ${{ secrets.NETCUP_SSH_KEY }}
+          SSH_HOST: ${{ secrets.NETCUP_HOST }}
+          SSH_USER: ${{ secrets.NETCUP_USER }}
+          REMOTE_PATH: ${{ secrets.NETCUP_PATH }}
+          KNOWN_HOSTS: ${{ secrets.NETCUP_KNOWN_HOSTS }}
+        run: |
+          missing=""
+          [ -n "$SSH_KEY" ]     || missing="$missing NETCUP_SSH_KEY"
+          [ -n "$SSH_HOST" ]    || missing="$missing NETCUP_HOST"
+          [ -n "$SSH_USER" ]    || missing="$missing NETCUP_USER"
+          [ -n "$REMOTE_PATH" ] || missing="$missing NETCUP_PATH"
+          [ -n "$KNOWN_HOSTS" ] || missing="$missing NETCUP_KNOWN_HOSTS"
+          if [ -n "$missing" ]; then
+            echo "Fehlende Secrets:$missing" >&2
+            echo "Anlegen unter Settings › Secrets and variables › Actions." >&2
+            exit 1
+          fi
+
+      - name: SSH einrichten
+        env:
+          SSH_KEY: ${{ secrets.NETCUP_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.NETCUP_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          # Der Schlüssel wird über die Umgebung übergeben, nicht als Argument:
+          # Argumente stehen in der Prozessliste, Umgebungsvariablen nicht.
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          # Fingerabdruck aus den Secrets statt StrictHostKeyChecking=no.
+          # Ohne das wäre die Verbindung gegen einen untergeschobenen Host offen.
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deployment auslösen
+        env:
+          SSH_HOST: ${{ secrets.NETCUP_HOST }}
+          SSH_USER: ${{ secrets.NETCUP_USER }}
+          REMOTE_PATH: ${{ secrets.NETCUP_PATH }}
+          SSH_PORT: ${{ vars.NETCUP_SSH_PORT }}
+          DEPLOY_BRANCH: ${{ vars.NETCUP_DEPLOY_BRANCH }}
+          RELOAD_CMD: ${{ vars.NETCUP_RELOAD_CMD }}
+          HEALTH_URL: ${{ vars.NETCUP_HEALTH_URL }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/id_deploy \
+              -p "${SSH_PORT:-22}" \
+              -o IdentitiesOnly=yes \
+              -o BatchMode=yes \
+              -o ConnectTimeout=20 \
+              "$SSH_USER@$SSH_HOST" \
+              "DEPLOY_BRANCH='${DEPLOY_BRANCH:-main}' \
+               RELOAD_CMD='${RELOAD_CMD:-}' \
+               HEALTH_URL='${HEALTH_URL:-}' \
+               bash -lc 'cd \"$REMOTE_PATH\" && bash ./deploy/deploy.sh'"
+
+      - name: Schlüssel entfernen
+        if: always()
+        run: rm -f ~/.ssh/id_deploy ~/.ssh/known_hosts
