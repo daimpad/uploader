@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="UploadEz">
+  <!-- Papier-Gelb als Grund, Tinte als Rahmen: die Formsprache des CI. -->
+  <rect x="0" y="0" width="64" height="64" fill="#FFFEE5"/>
+  <rect x="3" y="3" width="58" height="58" fill="none" stroke="#000000" stroke-width="5"/>
+  <!-- Der Pfeil nach oben steht fuer den Upload. Kanten, keine Boegen. -->
+  <g fill="none" stroke="#000000" stroke-width="6" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M32 46 V20"/>
+    <path d="M21 30 L32 18 L43 30"/>
+  </g>
+  <!-- Die Signatur des Zeichensatzes, immer dieselbe Stelle, immer zuletzt. -->
+  <rect x="54" y="54" width="6" height="6" fill="#00FF9C"/>
+</svg>
