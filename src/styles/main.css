@@ -1,120 +1,484 @@
-/* Reset and Base Styles */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+/* ============================================================================
+   UploadEz – Projektseite
+
+   Marken aus dem CI-Dokument daimpad/nozilla-ci (design-system.css).
+   Dieselben Namen wie dort, damit ein Abgleich mechanisch bleibt.
+
+   Formsprache: Kanten. Immer. Keine Verläufe, kein Weichzeichner, kein Glas.
+   Schatten sind harte Versätze, keine Wolken.
+
+   Anders als index.php und admin.php trägt diese Seite beide Erscheinungs-
+   bilder: sie ist neu geschrieben, hier hängt an keiner Marke ein Baustein,
+   der vorher nur für Hell gedacht war.
+============================================================================ */
+
+:root {
+  --nz-c-green:        #00FF9C;
+  --nz-c-green-strong: #00E88D;
+  --nz-c-green-soft:   #B7FFE0;
+
+  --nz-c-paper:        #FFFEE5;
+
+  --nz-c-ink:          #000000;
+  --nz-c-ink-900:      #0C0C0A;
+  --nz-c-ink-800:      #17160F;
+  --nz-c-ink-700:      #201F16;
+
+  --nz-c-warn:         #FF5F1F;
+
+  --nz-space-1:   4px;
+  --nz-space-2:   8px;
+  --nz-space-3:  12px;
+  --nz-space-4:  16px;
+  --nz-space-5:  24px;
+  --nz-space-6:  32px;
+  --nz-space-7:  48px;
+  --nz-space-8:  64px;
+
+  --nz-radius:        0;
+  --nz-stroke-rule:   2px;
+  --nz-stroke-strong: 3px;
+
+  --nz-font-display: "Zilla Slab", Georgia, "Times New Roman", serif;
+  --nz-font-body:    "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --nz-font-mono:    "Space Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --nz-text-xs:   12px;
+  --nz-text-sm:   13px;
+  --nz-text-base: 16px;
+  --nz-text-lg:   21px;
+  --nz-text-xl:   34px;
+  --nz-text-2xl:  48px;
+
+  --nz-dur:      160ms;
+  --nz-dur-fast:  90ms;
+  --nz-ease:     cubic-bezier(.2, 0, 0, 1);
+
+  --nz-container: 1080px;
+
+  color-scheme: light;
 }
 
-html {
-    font-size: 16px;
-    scroll-behavior: smooth;
+/* Hell ist der Normalfall. */
+:root,
+:root[data-theme="light"] {
+  --nz-bg:            var(--nz-c-paper);
+  --nz-surface:       #FFFFFF;
+  --nz-surface-alt:   var(--nz-c-paper);
+
+  --nz-text:          var(--nz-c-ink);
+  --nz-text-muted:    rgba(0, 0, 0, .66);
+  --nz-text-faint:    rgba(0, 0, 0, .42);
+
+  --nz-line:          var(--nz-c-ink);
+  --nz-line-soft:     rgba(0, 0, 0, .16);
+
+  --nz-signal:        var(--nz-c-green);
+  --nz-signal-strong: var(--nz-c-green-strong);
+  --nz-signal-soft:   var(--nz-c-green-soft);
+  --nz-on-signal:     var(--nz-c-ink);
+
+  --nz-shadow-color:  var(--nz-c-ink);
+  --nz-focus:         var(--nz-c-green-strong);
+
+  /* Kopfband: Papier auf Tinte. Im Dunklen drehen sich die Rollen um. */
+  --nz-band-bg:       var(--nz-c-ink);
+  --nz-band-text:     var(--nz-c-paper);
+  --nz-band-muted:    rgba(255, 254, 229, .55);
+  --nz-band-line:     rgba(255, 254, 229, .25);
+
+  color-scheme: light;
 }
+
+/* Dunkel — warm, nicht kalt. Papier wird zur Schrift, Tinte zum Raum. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --nz-bg:            var(--nz-c-ink-900);
+    --nz-surface:       var(--nz-c-ink-800);
+    --nz-surface-alt:   var(--nz-c-ink-700);
+
+    --nz-text:          var(--nz-c-paper);
+    --nz-text-muted:    rgba(255, 254, 229, .64);
+    --nz-text-faint:    rgba(255, 254, 229, .40);
+
+    --nz-line:          var(--nz-c-paper);
+    --nz-line-soft:     rgba(255, 254, 229, .18);
+
+    --nz-signal:        var(--nz-c-green);
+    --nz-signal-strong: var(--nz-c-green-strong);
+    --nz-signal-soft:   rgba(0, 255, 156, .16);
+    --nz-on-signal:     var(--nz-c-ink);
+
+    --nz-shadow-color:  var(--nz-c-paper);
+    --nz-focus:         var(--nz-c-green);
+
+    --nz-band-bg:       var(--nz-c-ink-800);
+    --nz-band-text:     var(--nz-c-paper);
+    --nz-band-muted:    rgba(255, 254, 229, .55);
+    --nz-band-line:     rgba(255, 254, 229, .25);
+
+    color-scheme: dark;
+  }
+}
+
+/* Ausdrückliche Wahl schlägt die Systemeinstellung. */
+:root[data-theme="dark"] {
+  --nz-bg:            var(--nz-c-ink-900);
+  --nz-surface:       var(--nz-c-ink-800);
+  --nz-surface-alt:   var(--nz-c-ink-700);
+
+  --nz-text:          var(--nz-c-paper);
+  --nz-text-muted:    rgba(255, 254, 229, .64);
+  --nz-text-faint:    rgba(255, 254, 229, .40);
+
+  --nz-line:          var(--nz-c-paper);
+  --nz-line-soft:     rgba(255, 254, 229, .18);
+
+  --nz-signal:        var(--nz-c-green);
+  --nz-signal-strong: var(--nz-c-green-strong);
+  --nz-signal-soft:   rgba(0, 255, 156, .16);
+  --nz-on-signal:     var(--nz-c-ink);
+
+  --nz-shadow-color:  var(--nz-c-paper);
+  --nz-focus:         var(--nz-c-green);
+
+  --nz-band-bg:       var(--nz-c-ink-800);
+  --nz-band-text:     var(--nz-c-paper);
+  --nz-band-muted:    rgba(255, 254, 229, .55);
+  --nz-band-line:     rgba(255, 254, 229, .25);
+
+  color-scheme: dark;
+}
+
+/* ── Grundlage ──────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    line-height: 1.6;
-    color: #333;
-    background-color: #f9f9f9;
+  font-family: var(--nz-font-body);
+  font-size: var(--nz-text-base);
+  line-height: 1.55;
+  background: var(--nz-bg);
+  color: var(--nz-text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Typography */
-h1, h2, h3, h4, h5, h6 {
-    margin-top: 1.5rem;
-    margin-bottom: 0.75rem;
-    font-weight: 600;
+/* Eingebettete Zeichen sitzen mittig in der Textzeile. */
+svg { vertical-align: -0.15em; flex: none; }
+
+a { color: inherit; }
+
+:focus-visible {
+  outline: var(--nz-stroke-strong) solid var(--nz-focus);
+  outline-offset: 2px;
 }
 
-h1 {
-    font-size: 2.5rem;
+.wrap {
+  width: 100%;
+  max-width: var(--nz-container);
+  margin: 0 auto;
+  padding: 0 var(--nz-space-5);
 }
 
-h2 {
-    font-size: 2rem;
+.label {
+  font-family: var(--nz-font-mono);
+  font-size: var(--nz-text-xs);
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
 }
 
-p {
-    margin-bottom: 1rem;
+/* Grüner Marker: nur für Schlüsselbegriffe, nie für ganze Sätze. */
+mark.g {
+  background: var(--nz-signal);
+  color: var(--nz-c-ink);
+  padding: 0 .18em;
 }
 
-/* Layout */
-body {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
+/* ── Kopfband ───────────────────────────────────────────────── */
+.band {
+  background: var(--nz-band-bg);
+  border-bottom: var(--nz-stroke-rule) solid var(--nz-line);
 }
 
-#app {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
+.band .wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nz-space-4);
+  padding-top: var(--nz-space-4);
+  padding-bottom: var(--nz-space-4);
 }
 
-.header {
-    background-color: #2c3e50;
-    color: white;
-    padding: 2rem;
-    text-align: center;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.wordmark {
+  font-family: var(--nz-font-display);
+  font-size: var(--nz-text-xl);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -.02em;
+  color: var(--nz-band-text);
+  text-decoration: none;
 }
 
-.header h1 {
-    margin: 0;
+.wordmark span { color: var(--nz-signal); }
+
+.band-actions { display: flex; align-items: center; gap: var(--nz-space-3); }
+
+.band-link {
+  color: var(--nz-band-muted);
+  text-decoration: none;
+  transition: color var(--nz-dur) var(--nz-ease);
 }
 
-.main {
-    flex: 1;
-    padding: 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-    width: 100%;
+.band-link:hover { color: var(--nz-band-text); }
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nz-space-2);
+  min-height: 40px;
+  padding: 0 var(--nz-space-3);
+  font-family: var(--nz-font-mono);
+  font-size: var(--nz-text-xs);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--nz-band-text);
+  border: 1.5px solid var(--nz-band-line);
+  border-radius: var(--nz-radius);
+  cursor: pointer;
+  transition: background var(--nz-dur) var(--nz-ease);
 }
 
-.footer {
-    background-color: #34495e;
-    color: white;
-    text-align: center;
-    padding: 1.5rem;
-    margin-top: 2rem;
-}
+.theme-toggle:hover { background: rgba(255, 254, 229, .12); }
 
-.footer p {
-    margin: 0;
-}
-
-/* Hero Section */
+/* ── Aufmacher ─────────────────────────────────────────────── */
 .hero {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 3rem;
-    border-radius: 8px;
-    text-align: center;
-    margin-bottom: 2rem;
+  padding: var(--nz-space-8) 0 var(--nz-space-7);
+  border-bottom: var(--nz-stroke-rule) solid var(--nz-line);
 }
 
-.hero h2 {
-    color: white;
-    margin-top: 0;
+.hero .kicker { color: var(--nz-text-muted); margin-bottom: var(--nz-space-4); }
+
+.hero h1 {
+  font-family: var(--nz-font-display);
+  font-size: clamp(40px, 8vw, 92px);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -.03em;
+  margin-bottom: var(--nz-space-5);
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-    h1 {
-        font-size: 2rem;
-    }
+.hero .claim {
+  font-size: var(--nz-text-lg);
+  max-width: 58ch;
+  color: var(--nz-text-muted);
+  margin-bottom: var(--nz-space-6);
+}
 
-    h2 {
-        font-size: 1.5rem;
-    }
+.cta-row { display: flex; flex-wrap: wrap; gap: var(--nz-space-3); }
 
-    .main {
-        padding: 1rem;
-    }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nz-space-2);
+  min-height: 48px;
+  padding: 0 var(--nz-space-5);
+  font-family: var(--nz-font-body);
+  font-size: var(--nz-text-base);
+  font-weight: 600;
+  text-decoration: none;
+  border: var(--nz-stroke-rule) solid var(--nz-line);
+  border-radius: var(--nz-radius);
+  cursor: pointer;
+  transition: transform var(--nz-dur-fast) var(--nz-ease),
+              box-shadow var(--nz-dur-fast) var(--nz-ease);
+}
 
-    .hero {
-        padding: 2rem 1rem;
-    }
+.btn-primary {
+  background: var(--nz-signal);
+  color: var(--nz-on-signal);
+  box-shadow: 6px 6px 0 0 var(--nz-shadow-color);
+}
 
-    .header {
-        padding: 1.5rem;
-    }
+.btn-secondary {
+  background: var(--nz-surface);
+  color: var(--nz-text);
+  box-shadow: 3px 3px 0 0 var(--nz-shadow-color);
+}
+
+.btn:hover  { transform: translate(-1px, -1px); }
+.btn-primary:hover   { box-shadow: 8px 8px 0 0 var(--nz-shadow-color); }
+.btn-secondary:hover { box-shadow: 4px 4px 0 0 var(--nz-shadow-color); }
+.btn:active { transform: translate(3px, 3px); box-shadow: none; }
+
+/* ── Abschnitte ────────────────────────────────────────────── */
+.section {
+  padding: var(--nz-space-8) 0;
+  border-bottom: var(--nz-stroke-rule) solid var(--nz-line);
+}
+
+.section > .wrap > .label {
+  color: var(--nz-text-muted);
+  margin-bottom: var(--nz-space-3);
+}
+
+.section h2 {
+  font-family: var(--nz-font-display);
+  font-size: var(--nz-text-xl);
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: var(--nz-space-6);
+}
+
+/* ── Gitter der Merkmale ───────────────────────────────────────── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--nz-space-4);
+}
+
+.card {
+  background: var(--nz-surface);
+  border: var(--nz-stroke-rule) solid var(--nz-line);
+  border-radius: var(--nz-radius);
+  box-shadow: 6px 6px 0 0 var(--nz-shadow-color);
+  padding: var(--nz-space-5);
+}
+
+.card .icon { line-height: 0; margin-bottom: var(--nz-space-4); }
+
+.card h3 {
+  font-family: var(--nz-font-display);
+  font-size: var(--nz-text-lg);
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: var(--nz-space-2);
+}
+
+.card p { color: var(--nz-text-muted); font-size: var(--nz-text-sm); }
+
+/* ── Ablauf in drei Schritten ───────────────────────────────────── */
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0; }
+
+.step {
+  border: var(--nz-stroke-rule) solid var(--nz-line);
+  border-right-width: 0;
+  padding: var(--nz-space-5);
+  background: var(--nz-surface-alt);
+}
+
+.step:last-child { border-right-width: var(--nz-stroke-rule); }
+
+.step .num {
+  font-family: var(--nz-font-display);
+  font-size: var(--nz-text-2xl);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--nz-signal);
+  -webkit-text-stroke: 1.5px var(--nz-line);
+  margin-bottom: var(--nz-space-3);
+}
+
+.step h3 { font-size: var(--nz-text-base); font-weight: 600; margin-bottom: var(--nz-space-2); }
+.step p  { color: var(--nz-text-muted); font-size: var(--nz-text-sm); }
+
+/* ── Tabelle der Eckdaten ──────────────────────────────────────── */
+.facts { width: 100%; border-collapse: collapse; }
+
+.facts th,
+.facts td {
+  text-align: left;
+  padding: var(--nz-space-3) var(--nz-space-4) var(--nz-space-3) 0;
+  border-top: 1.5px solid var(--nz-line-soft);
+  vertical-align: top;
+}
+
+.facts tr:last-child th,
+.facts tr:last-child td { border-bottom: 1.5px solid var(--nz-line-soft); }
+
+.facts th {
+  font-family: var(--nz-font-mono);
+  font-size: var(--nz-text-xs);
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--nz-text-muted);
+  width: 34%;
+}
+
+.facts td { font-size: var(--nz-text-sm); }
+
+.facts code {
+  font-family: var(--nz-font-mono);
+  font-size: .92em;
+  background: var(--nz-surface-alt);
+  border: 1px solid var(--nz-line-soft);
+  padding: 1px 5px;
+}
+
+/* ── Hinweiskasten ──────────────────────────────────────────── */
+.note {
+  display: flex;
+  gap: var(--nz-space-3);
+  background: var(--nz-surface);
+  border: var(--nz-stroke-rule) solid var(--nz-line);
+  border-left-width: 8px;
+  border-left-color: var(--nz-signal);
+  padding: var(--nz-space-4);
+  margin-top: var(--nz-space-6);
+}
+
+.note .icon { line-height: 0; color: var(--nz-text); }
+.note p { font-size: var(--nz-text-sm); color: var(--nz-text-muted); }
+.note strong { color: var(--nz-text); }
+
+/* ── Fußzeile ─────────────────────────────────────────────── */
+footer { padding: var(--nz-space-6) 0; margin-top: auto; }
+
+footer .wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nz-space-3);
+  color: var(--nz-text-muted);
+}
+
+footer a {
+  text-decoration-color: var(--nz-signal);
+  text-decoration-thickness: var(--nz-stroke-strong);
+  text-underline-offset: 4px;
+}
+
+/* ── Schmale Bildschirme ──────────────────────────────────────── */
+@media (max-width: 720px) {
+  .wrap { padding: 0 var(--nz-space-4); }
+  .hero { padding: var(--nz-space-7) 0 var(--nz-space-6); }
+  .section { padding: var(--nz-space-7) 0; }
+  .cta-row .btn { width: 100%; justify-content: center; }
+
+  /* Untereinander gestapelt tragen die Schritte ihre Linie unten, nicht rechts. */
+  .step { border-right-width: var(--nz-stroke-rule); border-bottom-width: 0; }
+  .step:last-child { border-bottom-width: var(--nz-stroke-rule); }
+
+  .facts th, .facts td { display: block; width: 100%; padding-right: 0; }
+  .facts th { border-bottom: none; padding-bottom: var(--nz-space-1); }
+  .facts td { border-top: none; padding-top: 0; }
+  .facts tr:last-child th { border-bottom: none; }
+}
+
+@media (max-width: 460px) {
+  .band .wrap { flex-wrap: wrap; }
+  .wordmark { font-size: var(--nz-text-lg); }
+}
+
+/* Wer keine Bewegung will, bekommt keine. */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+  html { scroll-behavior: auto; }
 }
