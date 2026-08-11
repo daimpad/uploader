@@ -3,6 +3,10 @@ name: Deploy to Netcup
 # Löst nach jedem Merge auf main das Deployment auf dem Netcup-Server aus.
 # Gebaut wird nicht hier: der Server holt sich den Stand selbst per git.
 # Dieser Workflow stößt ihn nur an. Einrichtung siehe deploy/README.md.
+#
+# Sind die Secrets noch nicht hinterlegt, wird übersprungen statt zu scheitern.
+# Ein rotes Kreuz soll heißen "das Deployment ist kaputt", nicht "du hast es
+# noch nicht eingerichtet" — sonst schaut irgendwann niemand mehr hin.
 
 on:
   push:
@@ -10,6 +14,7 @@ on:
     paths-ignore:
       - '**.md'
       - 'docs/**'
+      - 'src/**'
       - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
@@ -19,14 +24,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  # Eigener Job, weil der secrets-Kontext in einer job-weiten if-Bedingung
+  # nicht zur Verfügung steht. Über ein Output geht es.
+  vorpruefung:
     runs-on: ubuntu-latest
-    # Optional: unter Settings › Environments lässt sich hier eine Freigabe
-    # oder eine IP-Beschränkung hinterlegen.
-    environment: production
-
+    outputs:
+      bereit: ${{ steps.pruefen.outputs.bereit }}
     steps:
-      - name: Zugangsdaten prüfen
+      - id: pruefen
         env:
           SSH_KEY: ${{ secrets.NETCUP_SSH_KEY }}
           SSH_HOST: ${{ secrets.NETCUP_HOST }}
@@ -34,18 +39,47 @@ jobs:
           REMOTE_PATH: ${{ secrets.NETCUP_PATH }}
           KNOWN_HOSTS: ${{ secrets.NETCUP_KNOWN_HOSTS }}
         run: |
-          missing=""
-          [ -n "$SSH_KEY" ]     || missing="$missing NETCUP_SSH_KEY"
-          [ -n "$SSH_HOST" ]    || missing="$missing NETCUP_HOST"
-          [ -n "$SSH_USER" ]    || missing="$missing NETCUP_USER"
-          [ -n "$REMOTE_PATH" ] || missing="$missing NETCUP_PATH"
-          [ -n "$KNOWN_HOSTS" ] || missing="$missing NETCUP_KNOWN_HOSTS"
-          if [ -n "$missing" ]; then
-            echo "Fehlende Secrets:$missing" >&2
-            echo "Anlegen unter Settings › Secrets and variables › Actions." >&2
-            exit 1
+          fehlend=""
+          [ -n "$SSH_KEY" ]     || fehlend="$fehlend NETCUP_SSH_KEY"
+          [ -n "$SSH_HOST" ]    || fehlend="$fehlend NETCUP_HOST"
+          [ -n "$SSH_USER" ]    || fehlend="$fehlend NETCUP_USER"
+          [ -n "$REMOTE_PATH" ] || fehlend="$fehlend NETCUP_PATH"
+          [ -n "$KNOWN_HOSTS" ] || fehlend="$fehlend NETCUP_KNOWN_HOSTS"
+
+          if [ -z "$fehlend" ]; then
+            echo "bereit=true" >> "$GITHUB_OUTPUT"
+            echo "Alle Zugangsdaten vorhanden." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
           fi
 
+          # Alles fehlt: das Deployment ist schlicht noch nicht eingerichtet.
+          gesamt=5
+          anzahl=$(printf '%s' "$fehlend" | wc -w)
+          echo "bereit=false" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Deployment übersprungen"
+            echo
+            if [ "$anzahl" -eq "$gesamt" ]; then
+              echo "Es ist noch nichts eingerichtet. Anleitung: \`deploy/README.md\`."
+            else
+              echo "Teilweise eingerichtet — es fehlen noch:"
+              echo
+              for s in $fehlend; do echo "- \`$s\`"; done
+            fi
+            echo
+            echo "Anzulegen unter **Settings › Secrets and variables › Actions**."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice title=Deployment übersprungen::Fehlende Secrets:$fehlend"
+
+  deploy:
+    needs: vorpruefung
+    if: needs.vorpruefung.outputs.bereit == 'true'
+    runs-on: ubuntu-latest
+    # Optional: unter Settings › Environments lässt sich hier eine Freigabe
+    # oder eine IP-Beschränkung hinterlegen.
+    environment: production
+
+    steps:
       - name: SSH einrichten
         env:
           SSH_KEY: ${{ secrets.NETCUP_SSH_KEY }}
